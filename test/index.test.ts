@@ -27,14 +27,16 @@ describe('usage scenario', () => {
   };
 
   beforeAll(() => {
-    FixtureFactory.sequence('id', function* () {
+    let factory = new FixtureFactory();
+
+    factory.sequence('id', function* () {
       let id = 0;
       while (true) yield id++;
     });
 
-    FixtureFactory.define('User', () => new User(0, '', ''))
+    factory.define('User', () => new User(0, '', ''))
       .trait('with id', (id: number) => ({ id }))
-      .trait('with auto id', () => ({ id: FixtureFactory.nextFrom('id') }))
+      .trait('with auto id', () => ({ id: factory.nextFrom('id') }))
       .trait('moderator', { authLevel: 1 })
       .trait('administrator', { authLevel: 2 })
       .trait('active', { status: true })
@@ -43,7 +45,7 @@ describe('usage scenario', () => {
       .trait('with username', (username: string) => ({ username }))
       .trait('deleted', ['inactive', ['with name', 'deleted']]);
 
-    FixtureFactory.alias(
+      factory.alias(
       'Superuser',
       'User',
       'administrator',
@@ -52,23 +54,25 @@ describe('usage scenario', () => {
       ['with username', 'superuser']
     );
 
-    FixtureFactory.alias('Bot', 'User', 'moderator');
+    factory.alias('Bot', 'User', 'moderator');
+
+    factory = factory.package();
 
     let botNames = ['tic', 'tac', 'toe'];
 
-    fixtures.users = FixtureFactory.createMany('User', 5, [
+    fixtures.users = factory.createMany('User', 5, [
       'with auto id',
       'active',
     ]);
 
-    fixtures.superuser = FixtureFactory.create('Superuser');
+    fixtures.superuser = factory.create('Superuser');
 
-    fixtures.bots = FixtureFactory.createMany('Bot', 8, (i: number) => [
+    fixtures.bots = factory.createMany('Bot', 8, (i: number) => [
       ['with id', 1000 + i],
       ['with name', `${botNames[Math.floor(Math.random() * 3)]}_bot`],
     ]);
 
-    fixtures.users.push(FixtureFactory.create('User', 'deleted'));
+    fixtures.users.push(factory.create('User', 'deleted'));
   });
 
   it('creates the correct fixture count', () => {

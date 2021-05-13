@@ -44,14 +44,16 @@ You can create a fixture factory for the `User` class and define its traits base
 import FixtureFactory from '@fixture-factory/fixture-factory';
 import User from '../src/user';
 
-FixtureFactory.sequence('id', function* () {
+const factory = new FixtureFactory();
+
+factory.sequence('id', function* () {
   let id = 0;
   while (true) yield id++;
 });
 
-FixtureFactory.define('User', () => new User(0, '', ''))
+factory.define('User', () => new User(0, '', ''))
   .trait('with id', id => ({ id }))
-  .trait('with auto id', () => ({ id: FixtureFactory.nextFrom('id') }))
+  .trait('with auto id', () => ({ id: factory.nextFrom('id') }))
   .trait('moderator', { authLevel: 1 })
   .trait('administrator', { authLevel: 2 })
   .trait('active', { status: true })
@@ -60,7 +62,7 @@ FixtureFactory.define('User', () => new User(0, '', ''))
   .trait('with username', username => ({ username }))
   .trait('deleted', ['inactive', ['with name', 'deleted']]);
 
-FixtureFactory.alias(
+factory.alias(
   'Superuser',
   'User',
   'administrator',
@@ -69,9 +71,9 @@ FixtureFactory.alias(
   ['with username', 'superuser']
 );
 
-FixtureFactory.alias('Bot', 'User', 'moderator');
+factory.alias('Bot', 'User', 'moderator');
 
-export default FixtureFactory.package();
+export default factory.package();
 ```
 
 Finally, you can use it in your tests to generate appropriate fixtures:
@@ -79,25 +81,25 @@ Finally, you can use it in your tests to generate appropriate fixtures:
 ```js
 // test/user.js
 import User from '../src/user';
-import UserFactory from '../fixtures/user';
+import userFactory from '../fixtures/user';
 
 let fixtures = { users: [], bots: [] };
 
 const botNames = ['tic', 'tac', 'toe'];
 
-fixtures.users = FixtureFactory.createMany('User', 5, [
+fixtures.users = userFactory.createMany('User', 5, [
   'with auto id',
   'active',
 ]);
 
-fixtures.superuser = FixtureFactory.create('Superuser');
+fixtures.superuser = userFactory.create('Superuser');
 
-fixtures.bots = FixtureFactory.createMany('Bot', 8, i => [
+fixtures.bots = userFactory.createMany('Bot', 8, i => [
   ['with id', 1000 + i],
   ['with name', `${botNames[Math.floor(Math.random() * 3)]}_bot`],
 ]);
 
-fixtures.users.push(FixtureFactory.create('User', 'deleted'));
+fixtures.users.push(userFactory.create('User', 'deleted'));
 
 describe('User', () => {
   describe('stringify()', () => {
@@ -120,18 +122,32 @@ describe('User', () => {
 
 ## API reference
 
+#### Creating factory instances
+
+Factory instances can be created using the `FixtureFactory` constructor.
+
+```js
+const factory = new FixtureFactory();
+```
+
+**Return value**
+
+A `FixtureFactory` instance.
+
 #### Defining factories
 
-Factories can be defined using `FixtureFactory.define(name, initializer)`.
+Factories can be defined using `FixtureFactory.prototype.define(name, initializer)`.
 
 ```js
 import User from './user';
 
+const factory = new FixtureFactory();
+
 // With a constructor
-FixtureFactory.define('User', User);
+factory.define('User', User);
 
 // With a function
-FixtureFactory.define('Item', () => ({ itemId: 0 }));
+factory.define('Item', () => ({ itemId: 0 }));
 ```
 
 **Parameters**
@@ -148,7 +164,9 @@ A new `FactoryDefinition` which can be used to define traits.
 Traits can be chained to any existing definition using `FactoryDefinition.prototype.trait(name, definition)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .define('Item', () => ({ itemId: 0 }))
   // With an object
   .trait('active', { active: true })
@@ -172,16 +190,18 @@ The `FactoryDefinition` for which the method was called.
 
 #### Creating aliases
 
-An alias is a thin layer on top of an existing definition, inheriting any traits defined up to that point. Aliases can be defined using `FixtureFactory.alias(aliasName, name, ...params)`.
+An alias is a thin layer on top of an existing definition, inheriting any traits defined up to that point. Aliases can be defined using `FixtureFactory.prototype.alias(aliasName, name, ...params)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .define('Product', { id: 0 })
   .trait('category', category => ({ category }))
   .trait('manufacturer', manufacturer => ({ manufacturer }))
   .trait('in stock', { inStock: true });
 
-FixtureFactory
+factory
   .alias('Laptop', 'Product', ['category', 'laptops'], 'in stock'];
 ```
 
@@ -197,15 +217,17 @@ A new `FactoryDefinition` for the defined alias.
 
 #### Creating individual fixtures
 
-Individual fixtures can be created using `FixtureFactory.create(name, ...params)`.
+Individual fixtures can be created using `FixtureFactory.prototype.create(name, ...params)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .define('Item', () => ({ itemId: 0 }))
   .trait('active', { active: true })
   .trait('named', name => ({ name }));
 
-const myItem = FixtureFactory
+const myItem = factory
   .create('Item', 'active', ['name', 'Laptop']);
 // { itemId: 0, active: true, name: 'Laptop' }
 ```
@@ -221,17 +243,19 @@ A fixture object.
 
 ### Creating multiple fixtures
 
-Multiple fixtures can be created using `FixtureFactory.createMany(name, num, paramMap)`.
+Multiple fixtures can be created using `FixtureFactory.prototype.createMany(name, num, paramMap)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .define('Item', () => ({ itemId: 0 }))
   .trait('active', { active: true })
   .trait('category', category => ({ category }))
   .trait('id', itemId => ({ itemId }));
 
 // With array
-const laptops = FixtureFactory
+const laptops = factory
   .createMany('Item', 2, ['active', ['category', 'Laptop']]);
 // [
 //  { itemId: 0, active: true, category: 'Laptop' },
@@ -239,7 +263,7 @@ const laptops = FixtureFactory
 // ]
 
 // With function
-const numberedItems = FixtureFactory
+const numberedItems = factory
   .createMany('Item', 3, (id) => ['id', id]);
 // [ { itemId: 0 }, { itemId: 1 }, { itemId: 2} ]
 ```
@@ -256,10 +280,12 @@ An array of fixture objects.
 
 #### Defining sequences
 
-Sequences are simple generators that can be used when creating fixtures. They can be defined using `FixtureFactory.sequence(name, generator)`.
+Sequences are simple generators that can be used when creating fixtures. They can be defined using `FixtureFactory.prototype.sequence(name, generator)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .sequence('id', function* () {
     let id = 0;
     while (true) yield id++;
@@ -277,20 +303,22 @@ A generator.
 
 #### Using sequences
 
-Sequences can be called to generate sequential values using `FixtureFactory.nextFrom(name)`.
+Sequences can be called to generate sequential values using `FixtureFactory.prototype.nextFrom(name)`.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .sequence('id', function* () {
     let id = 10;
     while (true) yield id++;
   });
 
-FixtureFactory
+factory
   .define('Item', () => ({ itemId: 0 }))
-  .trait('autoId', () => ({ itemId: FixtureFactory.nextFrom('id') }));
+  .trait('autoId', () => ({ itemId: factory.nextFrom('id') }));
 
-const numberedItems = FixtureFactory
+const numberedItems = factory
   .createMany('Item', 3, ['autoId']);
 // [ { itemId: 10 }, { itemId: 11 }, { itemId: 12 }]
 ```
@@ -305,18 +333,20 @@ The next value in the given sequence.
 
 #### Packaging factories
 
-Factories can be packaged along with any definitions, aliases, sequences and traits they contain using `FixtureFactory.package()`. Packaged factories only expose their `create()`, `createMany()` and `nextFrom()` methods and any contained definitions cannot be altered further.
+Factories can be packaged along with any definitions, aliases, sequences and traits they contain using `FixtureFactory.prototype.package()`. Packaged factories only expose their `create()`, `createMany()` and `nextFrom()` methods and any contained definitions cannot be altered further.
 
 This is especially useful when exporting definitions from a file to use in multiple test files.
 
 ```js
-FixtureFactory
+const factory = new FixtureFactory();
+
+factory
   .define('Item', () => ({ itemId: 0 }))
   .trait('active', { active: true })
   .trait('category', category => ({ category }))
   .trait('id', itemId => ({ itemId }));
 
-export default FixtureFactory.package();
+export default factory.package();
 ```
 
 **Return value**
