@@ -1,6 +1,6 @@
 {
   "name": "@fixture-factory/fixture-factory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Modest fixture creation utility for JS tests",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
