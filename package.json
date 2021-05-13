@@ -1,7 +1,7 @@
 {
-  "name": "fixture-factory",
+  "name": "@fixture-factory/fixture-factory",
   "version": "1.0.0",
-  "description": "Simple utility for creating JS test fixtures",
+  "description": "Modest fixture creation utility for JS tests",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -14,7 +14,7 @@
   "scripts": {
     "start": "tsdx watch",
     "build": "tsdx build",
-    "test": "tsdx test",
+    "test": "tsdx test --coverage",
     "lint": "tsdx lint",
     "prepare": "tsdx build"
   },
