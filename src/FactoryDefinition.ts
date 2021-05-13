@@ -1,7 +1,7 @@
 import { Traits, TraitDefinitions, FactoryInitializer, FactoryName } from './constants';
 
 type TraitDefinition = Function | Object | Array<string>;
-type TraitParameter = [string, ...any] | string;
+type TraitParameter = [string, ...any[]] | string;
 
 class FactoryDefinition {
   readonly [FactoryName]: string;
